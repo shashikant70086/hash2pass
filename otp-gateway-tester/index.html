@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>hash2pass · Tester</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --muted: #8a93a6; --text: #eef1f7;
+    --accent: #6ea8ff; --ok: #4ade80; --err: #f87171; --warn: #fbbf24; --border: #262a33;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100vh; font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--text); }
+  body { display: grid; place-items: start center; padding: 24px; }
+  .wrap { width: 100%; max-width: 520px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+  label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 6px; }
+  label:first-of-type { margin-top: 0; }
+  input, textarea { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border);
+    background: #0d0f14; color: var(--text); font-size: 14px; font-family: inherit; }
+  textarea { resize: vertical; min-height: 80px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+  input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+  button { padding: 11px 14px; border-radius: 10px; border: 0; cursor: pointer;
+    background: var(--accent); color: #0b0d12; font-weight: 600; font-size: 14px; }
+  button.full { width: 100%; }
+  button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; margin-top: 12px; }
+  .row > * { flex: 1; }
+  .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; margin-right: 6px; }
+  .pill.ok { background: rgba(74,222,128,.15); color: var(--ok); }
+  .pill.err { background: rgba(248,113,113,.15); color: var(--err); }
+  .pill.warn { background: rgba(251,191,36,.15); color: var(--warn); }
+  .status { font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-top: 12px; display: none; word-break: break-all; }
+  .status.show { display: block; }
+  .status.ok { background: rgba(74,222,128,.1); color: var(--ok); border: 1px solid rgba(74,222,128,.3); }
+  .status.err { background: rgba(248,113,113,.1); color: var(--err); border: 1px solid rgba(248,113,113,.3); }
+  .status.info { background: rgba(110,168,255,.1); color: var(--accent); border: 1px solid rgba(110,168,255,.3); }
+  code { background: #0d0f14; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+  small { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>hash2pass — tester</h1>
+  <div class="sub">Talks directly to your phone-hosted gateway. Open this page on any device on the same network.</div>
+
+  <div class="card">
+    <h2>Connection</h2>
+    <label for="baseUrl">Gateway base URL</label>
+    <input id="baseUrl" placeholder="http://192.168.29.120:8787" />
+    <label for="apiKey">API key (from the gateway app's Home screen)</label>
+    <input id="apiKey" placeholder="sk_…" />
+    <div class="row">
+      <button id="saveBtn" class="ghost">Save</button>
+      <button id="checkBtn">Check connection</button>
+    </div>
+    <div id="connStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>1. Request OTP</h2>
+    <label for="phone">Phone number (E.164, e.g. +919876543210)</label>
+    <input id="phone" placeholder="+919876543210" inputmode="tel" />
+    <button id="requestBtn" class="full" style="margin-top:12px">Send OTP</button>
+    <div id="requestStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Verify code</h2>
+    <label for="code">Code from SMS</label>
+    <input id="code" placeholder="123456" inputmode="numeric" maxlength="8" />
+    <button id="verifyBtn" class="full" disabled style="margin-top:12px">Verify</button>
+    <div id="verifyStatus" class="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>Last raw response</h2>
+    <textarea id="rawOut" readonly placeholder="cURL-equivalent and JSON shown here"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>Integration snippets</h2>
+    <div class="row" style="margin-bottom:8px">
+      <button id="copyCurlBtn" class="ghost">Copy cURL</button>
+      <button id="copyJsBtn" class="ghost">Copy fetch (JS)</button>
+    </div>
+    <small>Replace <code>BASE</code>, <code>KEY</code> and <code>PHONE</code> in the snippet you copy.</small>
+  </div>
+</div>
+
+<script>
+  const LS = {
+    base: 'otp-gw-base',
+    key:  'otp-gw-key',
+    phone:'otp-gw-phone',
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const show = (el, kind, msg) => { el.className = `status show ${kind}`; el.textContent = msg; };
+  const hide = (el) => { el.className = 'status'; el.textContent = ''; };
+
+  let currentRequestId = null;
+
+  // Hydrate from localStorage
+  $('baseUrl').value = localStorage.getItem(LS.base) || '';
+  $('apiKey').value  = localStorage.getItem(LS.key)  || '';
+  $('phone').value   = localStorage.getItem(LS.phone) || '';
+
+  function getBase() { return ($('baseUrl').value || '').trim().replace(/\/+$/, ''); }
+  function getKey()  { return ($('apiKey').value  || '').trim(); }
+
+  function setRaw(method, path, body, status, json) {
+    const base = getBase();
+    const cmd = `curl -X ${method} ${base}${path} \\
+  -H "x-api-key: ${getKey() || 'YOUR_KEY'}" \\
+  -H "content-type: application/json"${body ? ` \\
+  -d '${JSON.stringify(body)}'` : ''}`;
+    $('rawOut').value = `# ${method} ${path}  →  ${status}\n${cmd}\n\n${JSON.stringify(json, null, 2)}`;
+  }
+
+  async function call(method, path, body) {
+    const base = getBase();
+    if (!base) throw new Error('Gateway base URL is empty.');
+    const headers = { 'content-type': 'application/json' };
+    const key = getKey();
+    if (key) headers['x-api-key'] = key;
+    const res = await fetch(base + path, {
+      method, headers, body: body ? JSON.stringify(body) : undefined,
+    });
+    const text = await res.text();
+    let json; try { json = JSON.parse(text); } catch { json = { raw: text }; }
+    setRaw(method, path, body, res.status, json);
+    return { ok: res.ok, status: res.status, json };
+  }
+
+  $('saveBtn').onclick = () => {
+    localStorage.setItem(LS.base, getBase());
+    localStorage.setItem(LS.key,  getKey());
+    show($('connStatus'), 'ok', 'Saved to this browser.');
+  };
+
+  $('checkBtn').onclick = async () => {
+    hide($('connStatus'));
+    try {
+      const h = await call('GET', '/healthz');
+      if (!h.ok) return show($('connStatus'), 'err', `healthz returned ${h.status}`);
+      const info = await call('GET', '/v1/info');
+      if (info.status === 401) return show($('connStatus'), 'err', 'Unauthorized — wrong API key.');
+      if (!info.ok) return show($('connStatus'), 'err', `info returned ${info.status}: ${info.json.error || ''}`);
+      const i = info.json;
+      show($('connStatus'), 'ok',
+        `Connected. v${i.version} · ${i.otpDigits}-digit · ${i.otpTtlSeconds}s TTL · ${i.rateLimitPerPhonePerHour}/hr/phone`);
+    } catch (e) {
+      show($('connStatus'), 'err', e.message + ' — is the gateway reachable from this device?');
+    }
+  };
+
+  $('requestBtn').onclick = async () => {
+    hide($('requestStatus'));
+    const phone = $('phone').value.trim();
+    if (!phone) return show($('requestStatus'), 'err', 'Enter a phone number with country code.');
+    localStorage.setItem(LS.phone, phone);
+    $('requestBtn').disabled = true;
+    try {
+      const r = await call('POST', '/v1/otp/request', { phone });
+      if (!r.ok) return show($('requestStatus'), 'err', r.json.error || `failed (${r.status})`);
+      currentRequestId = r.json.requestId;
+      $('verifyBtn').disabled = false;
+      show($('requestStatus'), 'ok', `Sent. requestId=${currentRequestId} · expires in ${r.json.expiresInSeconds}s`);
+    } catch (e) {
+      show($('requestStatus'), 'err', e.message);
+    } finally {
+      $('requestBtn').disabled = false;
+    }
+  };
+
+  $('verifyBtn').onclick = async () => {
+    hide($('verifyStatus'));
+    const code = $('code').value.trim();
+    if (!currentRequestId) return show($('verifyStatus'), 'err', 'Request an OTP first.');
+    if (!code) return show($('verifyStatus'), 'err', 'Enter the code from the SMS.');
+    $('verifyBtn').disabled = true;
+    try {
+      const r = await call('POST', '/v1/otp/verify', { requestId: currentRequestId, code });
+      if (r.json.ok) show($('verifyStatus'), 'ok', '✓ Verified. The user is authenticated.');
+      else show($('verifyStatus'), 'err', r.json.reason || `failed (${r.status})`);
+    } catch (e) {
+      show($('verifyStatus'), 'err', e.message);
+    } finally {
+      $('verifyBtn').disabled = false;
+    }
+  };
+
+  $('copyCurlBtn').onclick = () => {
+    const snippet = `# 1. Request OTP
+curl -X POST $BASE/v1/otp/request \\
+  -H "x-api-key: $KEY" \\
+  -H "content-type: application/json" \\
+  -d '{"phone":"$PHONE"}'
+
+# 2. Verify (use the requestId returned above)
+curl -X POST $BASE/v1/otp/verify \\
+  -H "x-api-key: $KEY" \\
+  -H "content-type: application/json" \\
+  -d '{"requestId":"req_…","code":"123456"}'`;
+    copy(snippet, $('copyCurlBtn'));
+  };
+
+  $('copyJsBtn').onclick = () => {
+    const snippet = `const BASE = "${getBase() || 'http://192.168.x.x:8787'}";
+const KEY  = "${getKey() || 'sk_…'}";
+
+async function requestOtp(phone) {
+  const r = await fetch(\`\${BASE}/v1/otp/request\`, {
+    method: 'POST',
+    headers: { 'x-api-key': KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ phone }),
+  });
+  return r.json(); // { requestId, expiresInSeconds }
+}
+
+async function verifyOtp(requestId, code) {
+  const r = await fetch(\`\${BASE}/v1/otp/verify\`, {
+    method: 'POST',
+    headers: { 'x-api-key': KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ requestId, code }),
+  });
+  return r.json(); // { ok: true } on success
+}`;
+    copy(snippet, $('copyJsBtn'));
+  };
+
+  function copy(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent; btn.textContent = 'Copied ✓';
+      setTimeout(() => btn.textContent = orig, 1200);
+    });
+  }
+
+  // Auto-check on load if we have saved config
+  if (getBase()) $('checkBtn').click();
+</script>
+</body>
+</html>

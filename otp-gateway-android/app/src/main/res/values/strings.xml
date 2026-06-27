@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">hash2pass</string>
+    <string name="channel_gateway">hash2pass</string>
+    <string name="notif_gateway_active">Gateway active</string>
+</resources>

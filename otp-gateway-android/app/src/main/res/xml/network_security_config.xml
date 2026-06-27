@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Dev: permit cleartext on private LAN ranges so http://192.168.x.x relays work. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
