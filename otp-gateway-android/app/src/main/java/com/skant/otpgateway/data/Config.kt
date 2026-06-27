@@ -43,7 +43,7 @@ data class Config(
             rateLimitPerPhonePerHour = 5,
             rateLimitPerKeyPerMinute = 30,
             maxVerifyAttempts = 5,
-            smsTemplate = "Your verification code is {otp}. It expires in {ttl_min} min.",
+            smsTemplate = "Yo! Your survival key is {otp} 🔐. Don’t sleep on it! use it before {ttl_min} min otherwise it will sleep ",
             corsOrigins = "*",
             publicBaseUrl = "",
             autoStartOnBoot = false
