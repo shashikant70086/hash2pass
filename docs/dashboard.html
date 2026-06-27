@@ -85,52 +85,18 @@
 
     <header class="sticky top-0 z-40 h-[63px] bg-purewhite/95 border-b border-lightgray flex items-center justify-center backdrop-blur-sm">
         <div class="w-full max-w-[1440px] px-3 md:px-8 flex items-center justify-between">
-            <a href="#" class="font-primary font-bold text-base text-charcoal flex items-center gap-2 hover:text-skyblue transition-colors duration-150">
-                <span class="material-symbols-outlined">vpn_key</span>
-                hash2pass_
+            <a href="index.html" class="font-primary font-bold text-sm text-charcoal flex items-center gap-2 hover:text-skyblue transition-colors duration-150 uppercase tracking-widest">
+                <span class="material-symbols-outlined text-[18px]">vpn_key</span>
+                hash2pass // gateway
             </a>
 
-            <div class="flex items-center gap-2 md:gap-4">
-                <div id="status-badge" class="bg-forest text-purewhite px-3 py-1 font-primary font-bold text-xs uppercase tracking-[0.5px] flex items-center gap-1.5">
-                    <span class="inline-block w-2.5 h-2.5 bg-purewhite animate-pulse"></span>
-                    STATUS: ACTIVE
-                </div>
-                <div class="hidden sm:flex border border-steel items-center px-2 py-1 font-primary font-bold text-[10px] text-steel">
-                    NODE_ID: HASH2PASS_GW_1.0
-                </div>
-            </div>
+            <nav class="hidden md:flex items-center gap-8 font-primary text-xs font-bold uppercase text-charcoal/70 tracking-widest">
+                <a href="index.html" class="hover:text-skyblue transition-colors">Home</a>
+                <a href="https://github.com/shashikant70086/hash2pass" target="_blank" class="hover:text-skyblue transition-colors">GitHub</a>
+                <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" class="hover:text-skyblue transition-colors">Releases</a>
+            </nav>
         </div>
     </header>
-
-    <section class="border-b border-steel bg-offwhite py-4 px-3 md:px-8">
-        <div class="w-full max-w-[1440px] mx-auto flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
-            <div>
-                <span class="text-[10px] font-primary uppercase tracking-[1px] text-charcoal/50 block mb-1">SYSTEM CONTROLLER // CONFIGURE THIS PAGE</span>
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-skyblue">settings_suggest</span>
-                    <h2 class="font-primary font-bold text-xs text-charcoal uppercase">Live Telemetry Dashboard</h2>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                <div class="flex items-center bg-purewhite border border-steel w-full sm:w-[280px]">
-                    <span class="pl-3 text-steel font-primary font-bold text-[11px] select-none">Repo:</span>
-                    <input type="text" id="github-repo-input" value="shashikant70086/hash2pass" 
-                           class="bg-transparent text-charcoal font-primary text-xs p-2 focus:outline-none w-full border-none">
-                </div>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <button id="btn-sync-github" class="bg-charcoal text-purewhite px-4 py-2 text-xs font-primary font-bold flex items-center justify-center gap-2 hover:bg-skyblue transition-colors flex-1 sm:flex-initial">
-                        <span class="material-symbols-outlined text-[16px]">sync</span>
-                        RE-SYNC REPO
-                    </button>
-                    <a href="https://github.com/shashikant70086/hash2pass/releases/latest" class="bg-warmbeige text-charcoal border border-steel px-4 py-2 text-xs font-primary font-bold flex items-center justify-center gap-2 hover:bg-lightgray transition-colors flex-1 sm:flex-initial">
-                        <span class="material-symbols-outlined text-[16px]">download</span>
-                        GET LATEST APK
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
 
     <main class="w-full max-w-[1440px] mx-auto pb-24 px-3 md:px-8">
         
@@ -386,8 +352,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const githubRepoInput = document.getElementById('github-repo-input');
-            const btnSyncGithub = document.getElementById('btn-sync-github');
 
             const showSystemToast = (msg, isError = false) => {
                 const toast = document.getElementById('toast-message');
@@ -485,15 +449,9 @@
             };
 
             const syncFromGithubRepository = async () => {
-                const repoPath = githubRepoInput.value.trim();
-                if (!repoPath || !repoPath.includes('/')) {
-                    showSystemToast('INVALID GITHUB TARGET.', true);
-                    return;
-                }
+                const repoPath = 'shashikant70086/hash2pass';
 
                 showSystemToast('COMMENCING REMOTE REPOSITORY LINK...', false);
-                const statusBadge = document.getElementById('status-badge');
-                statusBadge.innerHTML = `<span class="inline-block w-2.5 h-2.5 bg-purewhite animate-pulse"></span> SYNCING...`;
                 
                 try {
                     const repoResponse = await fetch(`https://api.github.com/repos/${repoPath}`);
@@ -528,21 +486,14 @@
                         document.getElementById('stat-commits').textContent = sumCommits;
                     }
 
-                    statusBadge.className = "bg-forest text-purewhite px-3 py-1 font-primary font-bold text-xs uppercase tracking-[0.5px] flex items-center gap-1.5";
-                    statusBadge.innerHTML = `<span class="inline-block w-2.5 h-2.5 bg-purewhite"></span> STATUS: ACTIVE`;
-                    
                     showSystemToast('GITHUB TELEMETRY ROUTED SUCCESSFULLY.', false);
                     
                 } catch (error) {
                     console.error(error);
-                    statusBadge.className = "bg-danger text-purewhite px-3 py-1 font-primary font-bold text-xs uppercase tracking-[0.5px] flex items-center gap-1.5";
-                    statusBadge.innerHTML = `<span class="inline-block w-2.5 h-2.5 bg-purewhite"></span> SYNC FAILED`;
                     showSystemToast(`REMOTE SYNC FAILED. Check console.`, true);
                 }
             };
 
-            btnSyncGithub.addEventListener('click', syncFromGithubRepository);
-            
             // Initial Load Sync
             syncFromGithubRepository();
         });
