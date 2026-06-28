@@ -108,8 +108,6 @@
             --my: 50%;
             --strength: 0;
             background-color: transparent;
-            backdrop-filter: blur(12px) saturate(160%);
-            -webkit-backdrop-filter: blur(12px) saturate(160%);
             will-change: transform;
         }
 
@@ -118,14 +116,13 @@
             position: absolute;
             inset: 0;
             background: 
-                radial-gradient(circle 24px at var(--mx) var(--my), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.5) 40%, transparent 100%),
-                radial-gradient(ellipse 140% 90% at var(--mx) var(--my), rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 70%),
-                linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 40%, rgba(0, 0, 0, 0.02) 80%),
-                rgba(0, 0, 0, 0.025);
+                radial-gradient(circle 32px at var(--mx) var(--my), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.25) 40%, transparent 100%),
+                radial-gradient(ellipse 150% 100% at var(--mx) var(--my), rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 80%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 40%, rgba(255, 255, 255, 0.02) 100%);
             box-shadow: 
                 inset 0 0 1px rgba(255, 255, 255, 1),
-                inset 1px 1px 2px rgba(255, 255, 255, 0.7),
-                inset -1px -1px 4px rgba(0, 0, 0, 0.05);
+                inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+                inset -1px -1px 4px rgba(0, 0, 0, 0.08);
             opacity: var(--strength);
             transition: opacity 120ms ease-out;
             pointer-events: none;
@@ -135,15 +132,12 @@
         .hover-cell::after {
             content: "";
             position: absolute;
-            inset: -30%;
-            background:
-                radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.15) 30%, transparent 70%),
-                radial-gradient(circle at calc(var(--mx) - 20%) calc(var(--my) - 15%), rgba(255, 255, 255, 0.5), transparent 55%);
-            filter: blur(18px);
-            opacity: var(--strength);
+            inset: 0;
+            background: radial-gradient(circle 48px at var(--mx) var(--my), rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+            filter: blur(8px);
+            opacity: calc(var(--strength) * 0.8);
             transition: opacity 150ms ease-out;
             pointer-events: none;
-            z-index: -1;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -284,11 +278,14 @@
 
             function resizeAndDraw() {
                 cellSize = getCellSize();
-                cols = Math.ceil(window.innerWidth / cellSize) + 1;
-                rows = Math.ceil(window.innerHeight / cellSize) + 1;
+                const w = CANVAS.clientWidth;
+                const h = CANVAS.clientHeight;
                 
-                CANVAS.width = window.innerWidth * window.devicePixelRatio;
-                CANVAS.height = window.innerHeight * window.devicePixelRatio;
+                cols = Math.ceil(w / cellSize) + 1;
+                rows = Math.ceil(h / cellSize) + 1;
+                
+                CANVAS.width = w * window.devicePixelRatio;
+                CANVAS.height = h * window.devicePixelRatio;
                 ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
                 
                 hoverOverlay.style.width = `${cellSize * 3}px`;
@@ -298,7 +295,9 @@
             }
 
             function drawCanvas() {
-                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                const w = CANVAS.clientWidth;
+                const h = CANVAS.clientHeight;
+                ctx.clearRect(0, 0, w, h);
                 
                 const now = performance.now();
                 activeFills = activeFills.filter(f => now - f.startTime < 3000);
@@ -315,12 +314,12 @@
                 for (let c = 1; c <= cols; c++) {
                     const x = c * cellSize;
                     ctx.moveTo(x, 0);
-                    ctx.lineTo(x, window.innerHeight);
+                    ctx.lineTo(x, h);
                 }
                 for (let r = 1; r <= rows; r++) {
                     const y = r * cellSize;
                     ctx.moveTo(0, y);
-                    ctx.lineTo(window.innerWidth, y);
+                    ctx.lineTo(w, y);
                 }
                 ctx.stroke();
                 
