@@ -48,7 +48,7 @@
         * { border-radius: 0px !important; box-sizing: border-box; }
 
         body {
-            background-color: #FFFFFF;
+            background-color: #F4F3F0;
             color: #1A1D24;
             margin: 0;
             padding: 0;
@@ -95,13 +95,13 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at var(--mx) var(--my), rgba(37, 99, 235, 0.15), transparent);
-            box-shadow: inset 0 0 16px rgba(0,0,0, calc(var(--strength) * 0.15)), inset 0 0 2px rgba(0,0,0, calc(var(--strength) * 0.3));
-            transform: scale(calc(1 + var(--strength) * 0.04));
+            background: 
+                radial-gradient(ellipse at var(--mx) var(--my), rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, transparent 70%),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.10), transparent 40%);
             opacity: var(--strength);
-            transition: opacity 120ms ease-out, transform 120ms ease-out;
+            transition: opacity 120ms ease-out;
             pointer-events: none;
-            will-change: transform, opacity;
+            will-change: opacity;
         }
 
         @media (prefers-reduced-motion: reduce) {
