@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Navbar scroll effect
+    
     const nav = document.querySelector('.liquid-nav');
     if (nav) {
         window.addEventListener('scroll', () => {
@@ -16,14 +16,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let mouseY = window.innerHeight / 2;
     let mouseMoved = false;
 
-    // Global mouse tracking for liquid navigation
+    
     document.addEventListener("mousemove", (e) => {
         mouseX = e.clientX;
         mouseY = e.clientY;
         mouseMoved = true;
     }, { passive: true });
 
-    // ── Toast ─────────────────────────────────────────────────────────
+    
     const showSystemToast = (msg, isError = false) => {
         const toast = document.getElementById('toast-message');
         const text  = document.getElementById('toast-text');
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 4000);
     };
 
-    // ── Interactive Background Grid Engine ──
+    
     const hoverOverlay = document.getElementById('hover-overlay');
     const hoverCells = Array.from(document.querySelectorAll('.hover-cell'));
     
@@ -263,8 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mouseMoved = true;
     }, { passive: true });
 
-    // ── GitHub API Sync ───────────────────────────────────────────────
-    // Each endpoint has its own try-catch: one 403/429 won't block others.
+    
+    
     const renderLanguageChart = (langs) => {
         const container  = document.getElementById('language-chart-container');
         const palette    = ['bg-skyblue', 'bg-steel', 'bg-charcoal', 'bg-forest', 'bg-danger'];
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const icons = ['engineering', 'commit', 'code', 'build', 'analytics'];
         container.innerHTML = commits.map((item, idx) => {
             const d    = new Date(item.commit.author.date);
-            const date = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} // ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            const date = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} 
             return `
             <div class="flex gap-6 items-start relative">
                 <div class="flex items-center justify-center w-10 h-10 bg-offwhite border border-steel z-10 text-charcoal flex-shrink-0">
@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const CACHE_KEY = 'hash2pass_github_cache';
-    const CACHE_TTL = 3600 * 1000; // 1 hour in milliseconds
+    const CACHE_TTL = 3600 * 1000; 
 
     async function fetchWithCache(url) {
         const cachedStr = localStorage.getItem(CACHE_KEY + '_' + url);
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return cached.data;
                 }
             } catch (e) {
-                // Ignore parse errors
+                
             }
         }
         
