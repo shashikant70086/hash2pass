@@ -52,10 +52,14 @@
         .liquid-nav {
             position: sticky;
             top: 0;
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            border-radius: 0px;
             background: transparent;
             backdrop-filter: none;
             -webkit-backdrop-filter: none;
-            border-bottom: 1px solid transparent;
+            border: 1px solid transparent;
             box-shadow: none;
             overflow: hidden;
             z-index: 40;
@@ -75,10 +79,14 @@
         }
 
         .liquid-nav.scrolled {
+            top: 16px; /* Stick 16px from top viewport */
+            width: calc(100% - 32px);
+            max-width: 1200px;
+            border-radius: 24px;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.15));
             backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
             -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.35);
             box-shadow: inset 0 1px rgba(255, 255, 255, 0.75), inset 0 -1px rgba(255, 255, 255, 0.12), 0 12px 40px rgba(0, 0, 0, 0.08);
             height: 64px;
         }
@@ -141,32 +149,26 @@
 <body class="selection:bg-primary selection:text-white page-enter">
     <div id="interactive-grid-container"></div>
     <div id="page-content">
-
-
-  <!-- Acrylic glossy highlight -->
-  <div class="absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-white/5 pointer-events-none"></div>
-
-  <div class="flex items-center gap-4 relative z-10">
-    <span class="material-symbols-outlined text-text-main">vpn_key</span>
-    <h2 class="text-text-main text-lg font-bold tracking-tighter uppercase">hash2pass // gateway</h2>
-  </div>
-
-  <nav class="hidden md:flex gap-8 items-center h-full relative z-10">
-    <a href="https://github.com/shashikant70086/hash2pass" target="_blank" 
-       class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/10 hover:rounded-md px-2 py-1">
-       GITHUB
-    </a>
-    <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" 
-       class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/10 hover:rounded-md px-2 py-1">
-       RELEASES
-    </a>
-  </nav>
-</header>
-
-
+    <header class="liquid-nav flex items-center px-6 md:px-12 justify-between">
+        <div class="flex items-center gap-4 relative z-10">
+            <span class="material-symbols-outlined text-text-main">vpn_key</span>
+            <h2 class="text-text-main text-lg font-bold tracking-tighter uppercase">hash2pass // gateway</h2>
+        </div>
+        <nav class="hidden md:flex gap-8 items-center h-full relative z-10">
+            <a href="https://github.com/shashikant70086/hash2pass" target="_blank" 
+               class="text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/10 hover:rounded-md px-2 py-1">
+               GITHUB
+            </a>
+            <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" 
+               class="text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/10 hover:rounded-md px-2 py-1">
+               RELEASES
+            </a>
+        </nav>
+    </header>
 
     <main class="flex-grow flex flex-col items-center justify-center px-6 py-20 text-center relative z-10">
         <div class="max-w-3xl flex flex-col items-center gap-8">
+
             <div class="inline-flex items-center justify-center p-4 bg-blueprint-navy/5 rounded-full border border-blueprint-navy/10 mb-4">
                 <span class="material-symbols-outlined text-5xl text-primary">phonelink_lock</span>
             </div>
