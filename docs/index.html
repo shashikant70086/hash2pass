@@ -27,7 +27,7 @@
     <style>
         body {
             font-family: 'JetBrains Mono', monospace;
-            background-color: #F4F3F0;
+            background-color: #EAE7E0;
             color: #1A1D24;
             overflow-x: hidden;
         }
@@ -70,8 +70,8 @@
             position: absolute;
             inset: 0;
             background: 
-                radial-gradient(ellipse at var(--mx) var(--my), rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, transparent 70%),
-                linear-gradient(145deg, rgba(255, 255, 255, 0.10), transparent 40%);
+                radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.45) 40%, transparent 80%),
+                linear-gradient(145deg, rgba(255, 255, 255, 0.35), transparent 50%);
             opacity: var(--strength);
             transition: opacity 120ms ease-out;
             pointer-events: none;
@@ -85,10 +85,10 @@
         .grid-cell.solid-active {
             transition: background-color 0s;
         }
-        .grid-cell.solid-blue { background-color: #2563EB !important; border-color: #2563EB !important; }
-        .grid-cell.solid-orange { background-color: #FB923C !important; border-color: #FB923C !important; }
-        .grid-cell.solid-green { background-color: #22C55E !important; border-color: #22C55E !important; }
-        .grid-cell.solid-white { background-color: #F5F5F5 !important; border-color: #D1D5DB !important; }
+        .grid-cell.solid-blue { background-color: #0055FF !important; border-color: #0055FF !important; }
+        .grid-cell.solid-orange { background-color: #FF4400 !important; border-color: #FF4400 !important; }
+        .grid-cell.solid-green { background-color: #00DD44 !important; border-color: #00DD44 !important; }
+        .grid-cell.solid-pink { background-color: #FF0066 !important; border-color: #FF0066 !important; }
     </style>
 </head>
 <body class="selection:bg-primary selection:text-white page-enter">
@@ -165,7 +165,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const GRID = document.getElementById('interactive-grid-container');
-            const COLORS = ['solid-blue', 'solid-orange', 'solid-green', 'solid-white'];
+            const COLORS = ['solid-blue', 'solid-orange', 'solid-green', 'solid-pink'];
             const TAP_THRESHOLD = 8;
             
             let cellSize = 64;
@@ -175,6 +175,7 @@
             let activeTile = null;
             let activeTimeout = null;
             let resizeTimer = null;
+            let lastRandomColor = null;
             
             let touchStartX = 0;
             let touchStartY = 0;
@@ -303,7 +304,13 @@
                 }
 
                 cell.style.setProperty('--strength', '0');
-                const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                
+                let color;
+                do {
+                    color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                } while (color === lastRandomColor);
+                lastRandomColor = color;
+                
                 cell.classList.add(color, 'solid-active');
                 activeTile = cell;
 
