@@ -321,6 +321,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     };
 
+    const CACHE_KEY = 'hash2pass_github_cache';
+    const CACHE_TTL = 3600 * 1000; // 1 hour in milliseconds
+
+    async function fetchWithCache(url) {
+        const cachedStr = localStorage.getItem(CACHE_KEY + '_' + url);
+        if (cachedStr) {
+            try {
+                const cached = JSON.parse(cachedStr);
+                if (Date.now() - cached.timestamp < CACHE_TTL) {
+                    return cached.data;
+                }
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+        
+        const res = await fetch(url);
+        if (!res.ok) {
+            if (res.status === 403) throw new Error('RATE LIMITED');
+            throw new Error(`${res.status}`);
+        }
+        
+        const data = await res.json();
+        localStorage.setItem(CACHE_KEY + '_' + url, JSON.stringify({
+            timestamp: Date.now(),
+            data: data
+        }));
+        return data;
+    }
+
     const fmt = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 
     async function syncFromGithubRepository() {
@@ -328,16 +358,11 @@ document.addEventListener('DOMContentLoaded', () => {
         showSystemToast('COMMENCING REMOTE REPOSITORY LINK...', false);
 
         try {
-            const res  = await fetch(base);
-            if (!res.ok) {
-                if (res.status === 403) throw new Error('RATE LIMITED');
-                throw new Error(`${res.status}`);
-            }
-            const data = await res.json();
+            const data = await fetchWithCache(base);
             document.getElementById('stat-stars').textContent  = data.stargazers_count;
             document.getElementById('stat-issues').textContent = data.open_issues_count;
             document.getElementById('stat-forks').textContent  = data.forks_count;
-            document.getElementById('meta-date').textContent   = `SYNC DATE: ${fmt(new Date(data.updated_at))}`;
+            document.getElementById('meta-date').textContent   = `SYNC DATE: ${fmt(new Date(data.updated_at))} (CACHED)`;
         } catch (e) {
             console.warn('[hash2pass] repo:', e);
             document.getElementById('meta-date').textContent   = `SYNC ERROR: ${e.message}`;
@@ -348,22 +373,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch(`${base}/languages`);
-            if (res.ok) renderLanguageChart(await res.json());
+            const data = await fetchWithCache(`${base}/languages`);
+            renderLanguageChart(data);
         } catch (e) { console.warn('[hash2pass] languages:', e); }
 
         try {
-            const res = await fetch(`${base}/commits?per_page=4`);
-            if (res.ok) renderDynamicTimeline(await res.json());
+            const data = await fetchWithCache(`${base}/commits?per_page=4`);
+            renderDynamicTimeline(data);
         } catch (e) { console.warn('[hash2pass] commits:', e); }
 
         try {
-            const res = await fetch(`${base}/contributors`);
-            if (res.ok) {
-                const list  = await res.json();
-                const total = list.reduce((s, c) => s + c.contributions, 0);
-                document.getElementById('stat-commits').textContent = total;
-            }
+            const list = await fetchWithCache(`${base}/contributors`);
+            const total = list.reduce((s, c) => s + c.contributions, 0);
+            document.getElementById('stat-commits').textContent = total;
         } catch (e) { console.warn('[hash2pass] contributors:', e); }
 
         if (document.getElementById('meta-date').textContent.includes('ERROR')) {
