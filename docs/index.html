@@ -108,6 +108,8 @@
             --my: 50%;
             --strength: 0;
             background-color: transparent;
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
             will-change: transform;
         }
 
@@ -116,12 +118,12 @@
             position: absolute;
             inset: 0;
             background: 
-                radial-gradient(circle 32px at var(--mx) var(--my), rgba(255, 240, 220, 0.95) 0%, rgba(255, 140, 0, 0.3) 40%, transparent 100%),
-                radial-gradient(ellipse 150% 100% at var(--mx) var(--my), rgba(255, 120, 0, 0.25) 0%, rgba(255, 100, 0, 0.05) 50%, transparent 80%),
-                linear-gradient(135deg, rgba(255, 180, 50, 0.35) 0%, transparent 40%, rgba(255, 100, 0, 0.02) 100%);
+                radial-gradient(circle 32px at var(--mx) var(--my), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.25) 40%, transparent 100%),
+                radial-gradient(ellipse 150% 100% at var(--mx) var(--my), rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 80%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 40%, rgba(255, 255, 255, 0.02) 100%);
             box-shadow: 
-                inset 0 0 1px rgba(255, 200, 100, 1),
-                inset 1px 1px 2px rgba(255, 150, 50, 0.8),
+                inset 0 0 1px rgba(255, 255, 255, 1),
+                inset 1px 1px 2px rgba(255, 255, 255, 0.8),
                 inset -1px -1px 4px rgba(0, 0, 0, 0.08);
             opacity: var(--strength);
             transition: opacity 120ms ease-out;
@@ -133,7 +135,7 @@
             content: "";
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle 48px at var(--mx) var(--my), rgba(255, 120, 0, 0.55) 0%, transparent 70%);
+            background: radial-gradient(circle 48px at var(--mx) var(--my), rgba(255, 255, 255, 0.5) 0%, transparent 70%);
             filter: blur(8px);
             opacity: calc(var(--strength) * 0.8);
             transition: opacity 150ms ease-out;
@@ -147,12 +149,12 @@
 </head>
 <body class="selection:bg-primary selection:text-white page-enter">
     <div id="interactive-grid-container">
-        <div id="hover-overlay" style="position: absolute; top: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); will-change: transform; display: none;">
+        <canvas id="grid-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
+        <div id="hover-overlay" style="position: absolute; top: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); will-change: transform; display: none; pointer-events: none;">
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
         </div>
-        <canvas id="grid-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
     </div>
     <div id="page-content">
     <header class="liquid-nav flex items-center px-6 md:px-12 justify-between">
