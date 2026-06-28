@@ -104,16 +104,35 @@
     <div id="interactive-grid-container"></div>
     <div id="page-content">
 
-    <header class="w-full z-40 bg-background-sand/90 backdrop-blur-md border-b border-blueprint-navy/20 h-16 flex items-center px-6 md:px-12 justify-between sticky top-0">
-        <div class="flex items-center gap-4">
-            <span class="material-symbols-outlined text-text-main">vpn_key</span>
-            <h2 class="text-text-main text-lg font-bold tracking-tighter uppercase">hash2pass // gateway</h2>
-        </div>
-        <nav class="hidden md:flex gap-8 items-center h-full">
-            <a href="https://github.com/shashikant70086/hash2pass" target="_blank" class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase">GITHUB</a>
-            <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase">RELEASES</a>
-        </nav>
-    </header>
+<header class="w-full z-40 
+    bg-gradient-to-r from-white/10 via-white/20 to-white/10 
+    backdrop-blur-xl 
+    border border-white/30 
+    h-16 flex items-center px-6 md:px-12 justify-between sticky top-0 
+    rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.2)] 
+    overflow-hidden">
+  
+  <!-- Glossy highlight overlay -->
+  <div class="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none"></div>
+
+  <div class="flex items-center gap-4 relative z-10">
+    <span class="material-symbols-outlined text-text-main">vpn_key</span>
+    <h2 class="text-text-main text-lg font-bold tracking-tighter uppercase">hash2pass // gateway</h2>
+  </div>
+
+  <nav class="hidden md:flex gap-8 items-center h-full relative z-10">
+    <a href="https://github.com/shashikant70086/hash2pass" target="_blank" 
+       class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/20 hover:rounded-md px-2 py-1">
+       GITHUB
+    </a>
+    <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" 
+       class="nav-link text-sm font-bold tracking-widest text-blueprint-navy hover:text-primary transition-colors uppercase hover:bg-white/20 hover:rounded-md px-2 py-1">
+       RELEASES
+    </a>
+  </nav>
+</header>
+
+
 
     <main class="flex-grow flex flex-col items-center justify-center px-6 py-20 text-center relative z-10">
         <div class="max-w-3xl flex flex-col items-center gap-8">
@@ -173,6 +192,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Global mouse tracking for liquid navigation
+            document.addEventListener("mousemove", (e) => {
+                document.documentElement.style.setProperty("--mouse-x", e.clientX + "px");
+                document.documentElement.style.setProperty("--mouse-y", e.clientY + "px");
+            });
+
             const GRID = document.getElementById('interactive-grid-container');
             const COLORS = ['solid-red', 'solid-orange', 'solid-blue', 'solid-green', 'solid-brown'];
             const TAP_THRESHOLD = 8;
@@ -247,10 +272,21 @@
                 const mxPct = (mx / cellSize) * 100 + '%';
                 const myPct = (my / cellSize) * 100 + '%';
 
+                const dx = clientX - (rect.left + cellSize / 2);
+                const dy = clientY - (rect.top + cellSize / 2);
+                const tiltX = (dy / (cellSize/2)) * 5;
+                const tiltY = (dx / (cellSize/2)) * -5;
+                const clampedTiltX = Math.max(-5, Math.min(5, tiltX));
+                const clampedTiltY = Math.max(-5, Math.min(5, tiltY));
+
                 if (index === lastHoveredIndex) {
                     requestAnimationFrame(() => {
-                        gridCells[index].style.setProperty('--mx', mxPct);
-                        gridCells[index].style.setProperty('--my', myPct);
+                        const cell = gridCells[index];
+                        cell.style.setProperty('--mx', mxPct);
+                        cell.style.setProperty('--my', myPct);
+                        if (cell !== activeTile) {
+                            cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
+                        }
                     });
                     return;
                 }
@@ -259,6 +295,7 @@
                 requestAnimationFrame(() => {
                     currentlyHoveredCells.forEach(cell => {
                         cell.style.setProperty('--strength', '0');
+                        if (cell !== activeTile) cell.style.transform = '';
                     });
                     currentlyHoveredCells = [];
 
@@ -280,9 +317,11 @@
                             if (r === row && c === col) {
                                 cell.style.setProperty('--mx', mxPct);
                                 cell.style.setProperty('--my', myPct);
+                                cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
                             } else {
                                 cell.style.setProperty('--mx', '50%');
                                 cell.style.setProperty('--my', '50%');
+                                cell.style.transform = '';
                             }
                             
                             cell.style.setProperty('--strength', strength);
@@ -295,6 +334,7 @@
             function clearHover() {
                 currentlyHoveredCells.forEach(cell => {
                     cell.style.setProperty('--strength', '0');
+                    if (cell !== activeTile) cell.style.transform = '';
                 });
                 currentlyHoveredCells = [];
                 lastHoveredIndex = -1;

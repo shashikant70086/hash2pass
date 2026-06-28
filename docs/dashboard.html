@@ -79,9 +79,50 @@
             pointer-events: auto;
         }
 
+        .liquid-nav {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.15));
+            backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+            -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.75), inset 0 -1px rgba(255, 255, 255, 0.12), 0 12px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            z-index: 40;
+        }
+
+        .liquid-nav::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.75), transparent 45%);
+            mix-blend-mode: screen;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        .nav-link {
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.75), 0 8px 20px rgba(0, 0, 0, 0.08);
+            transition: all 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+            border-radius: 9999px !important;
+            padding: 0.5rem 1rem;
+            color: #1A1D24;
+            display: inline-block;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.85), 0 14px 35px rgba(0, 0, 0, 0.12);
+            color: #2563EB; /* Skyblue */
+        }
+
         .grid-cell {
-            border-right: 1px solid #E5E7EB;
-            border-bottom: 1px solid #E5E7EB;
+            border-right: 1px solid rgba(255, 255, 255, 0.25);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
             position: relative;
             overflow: hidden;
             clip-path: inset(0);
@@ -89,6 +130,10 @@
             --mx: 50%;
             --my: 50%;
             --strength: 0;
+            background-color: transparent;
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+            will-change: transform;
         }
 
         .grid-cell::before {
@@ -112,8 +157,22 @@
             will-change: opacity;
         }
 
+        .grid-cell::after {
+            content: "";
+            position: absolute;
+            inset: -30%;
+            background:
+                radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.15) 30%, transparent 70%),
+                radial-gradient(circle at calc(var(--mx) - 20%) calc(var(--my) - 15%), rgba(255, 255, 255, 0.5), transparent 55%);
+            filter: blur(18px);
+            opacity: var(--strength);
+            transition: opacity 150ms ease-out;
+            pointer-events: none;
+            z-index: -1;
+        }
+
         @media (prefers-reduced-motion: reduce) {
-            .grid-cell::before { transition: none !important; }
+            .grid-cell::before, .grid-cell::after { transition: none !important; }
         }
 
         /* Solid active states — no opacity, no gradients, no glow */
@@ -135,8 +194,8 @@
 <div id="page-content">
 
     <!-- ── Header ──────────────────────────────────────────────────── -->
-    <header class="sticky top-0 z-40 h-[63px] bg-purewhite/95 border-b border-lightgray flex items-center justify-center backdrop-blur-sm">
-        <div class="w-full max-w-[1440px] px-3 md:px-8 flex items-center justify-between">
+    <header class="liquid-nav h-[63px] flex items-center justify-center">
+        <div class="w-full max-w-[1440px] px-3 md:px-8 flex items-center justify-between relative z-10">
             <span class="font-primary font-bold text-sm text-charcoal flex items-center gap-2 uppercase tracking-widest">
                 <span class="material-symbols-outlined text-[18px]">vpn_key</span>
                 <a href="https://skant.me" class="hover:text-skyblue transition-colors">Shashikant</a>
@@ -144,10 +203,10 @@
                 <a href="https://hash2pass.skant.me/index.html" class="hover:text-skyblue transition-colors">Hash2Pass</a>
             </span>
 
-            <nav class="hidden md:flex items-center gap-8 font-primary text-xs font-bold uppercase text-charcoal/70 tracking-widest">
-                <a href="index.html"                                             class="hover:text-skyblue transition-colors">Home</a>
-                <a href="https://github.com/shashikant70086/hash2pass"          target="_blank" class="hover:text-skyblue transition-colors">GitHub</a>
-                <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" class="hover:text-skyblue transition-colors">Releases</a>
+            <nav class="hidden md:flex items-center gap-4 font-primary text-xs font-bold uppercase text-charcoal/70 tracking-widest">
+                <a href="index.html"                                             class="nav-link">Home</a>
+                <a href="https://github.com/shashikant70086/hash2pass"          target="_blank" class="nav-link">GitHub</a>
+                <a href="https://github.com/shashikant70086/hash2pass/releases" target="_blank" class="nav-link">Releases</a>
             </nav>
 
             <div class="flex flex-wrap items-center gap-4 font-primary text-xs text-charcoal/60">
@@ -387,6 +446,12 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
+    // Global mouse tracking for liquid navigation
+    document.addEventListener("mousemove", (e) => {
+        document.documentElement.style.setProperty("--mouse-x", e.clientX + "px");
+        document.documentElement.style.setProperty("--mouse-y", e.clientY + "px");
+    });
+
     // ── Toast ─────────────────────────────────────────────────────────
     const showSystemToast = (msg, isError = false) => {
         const toast = document.getElementById('toast-message');
@@ -489,10 +554,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const mxPct = (mx / cellSize) * 100 + '%';
         const myPct = (my / cellSize) * 100 + '%';
 
+        const dx = clientX - (rect.left + cellSize / 2);
+        const dy = clientY - (rect.top + cellSize / 2);
+        const tiltX = (dy / (cellSize/2)) * 5;
+        const tiltY = (dx / (cellSize/2)) * -5;
+        const clampedTiltX = Math.max(-5, Math.min(5, tiltX));
+        const clampedTiltY = Math.max(-5, Math.min(5, tiltY));
+
         if (index === lastHoveredIndex) {
             requestAnimationFrame(() => {
-                gridCells[index].style.setProperty('--mx', mxPct);
-                gridCells[index].style.setProperty('--my', myPct);
+                const cell = gridCells[index];
+                cell.style.setProperty('--mx', mxPct);
+                cell.style.setProperty('--my', myPct);
+                if (cell !== activeTile) {
+                    cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
+                }
             });
             return;
         }
@@ -501,6 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(() => {
             currentlyHoveredCells.forEach(cell => {
                 cell.style.setProperty('--strength', '0');
+                if (cell !== activeTile) cell.style.transform = '';
             });
             currentlyHoveredCells = [];
 
@@ -522,9 +599,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (r === row && c === col) {
                         cell.style.setProperty('--mx', mxPct);
                         cell.style.setProperty('--my', myPct);
+                        cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
                     } else {
                         cell.style.setProperty('--mx', '50%');
                         cell.style.setProperty('--my', '50%');
+                        cell.style.transform = '';
                     }
                     
                     cell.style.setProperty('--strength', strength);
@@ -537,6 +616,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function clearHover() {
         currentlyHoveredCells.forEach(cell => {
             cell.style.setProperty('--strength', '0');
+            if (cell !== activeTile) cell.style.transform = '';
         });
         currentlyHoveredCells = [];
         lastHoveredIndex = -1;
