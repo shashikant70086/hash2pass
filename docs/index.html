@@ -145,17 +145,44 @@
         @media (prefers-reduced-motion: reduce) {
             .hover-cell::before, .hover-cell::after { transition: none !important; }
         }
+
+        #interactive-grid-container {
+            background-color: #e5e7eb;
+        }
+
+        #grid-canvas, #grid-canvas-fg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #grid-canvas-fg {
+            pointer-events: none;
+        }
+
+        #hover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            will-change: transform;
+            display: none;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="selection:bg-primary selection:text-white page-enter">
-    <div id="interactive-grid-container" style="background-color: #e5e7eb;">
-        <canvas id="grid-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
-        <div id="hover-overlay" style="position: absolute; top: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); will-change: transform; display: none; pointer-events: none;">
+    <div id="interactive-grid-container">
+        <canvas id="grid-canvas"></canvas>
+        <div id="hover-overlay">
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
         </div>
-        <canvas id="grid-canvas-fg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+        <canvas id="grid-canvas-fg"></canvas>
     </div>
     <div id="page-content">
     <header class="liquid-nav flex items-center px-6 md:px-12 justify-between">
