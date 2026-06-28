@@ -329,13 +329,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res  = await fetch(base);
-            if (!res.ok) throw new Error(`${res.status}`);
+            if (!res.ok) {
+                if (res.status === 403) throw new Error('RATE LIMITED');
+                throw new Error(`${res.status}`);
+            }
             const data = await res.json();
             document.getElementById('stat-stars').textContent  = data.stargazers_count;
             document.getElementById('stat-issues').textContent = data.open_issues_count;
             document.getElementById('stat-forks').textContent  = data.forks_count;
             document.getElementById('meta-date').textContent   = `SYNC DATE: ${fmt(new Date(data.updated_at))}`;
-        } catch (e) { console.warn('[hash2pass] repo:', e); }
+        } catch (e) {
+            console.warn('[hash2pass] repo:', e);
+            document.getElementById('meta-date').textContent   = `SYNC ERROR: ${e.message}`;
+            document.getElementById('stat-stars').textContent  = 'ERR';
+            document.getElementById('stat-issues').textContent = 'ERR';
+            document.getElementById('stat-forks').textContent  = 'ERR';
+            document.getElementById('stat-commits').textContent = 'ERR';
+        }
 
         try {
             const res = await fetch(`${base}/languages`);
@@ -356,7 +366,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) { console.warn('[hash2pass] contributors:', e); }
 
-        showSystemToast('GITHUB TELEMETRY ROUTED SUCCESSFULLY.', false);
+        if (document.getElementById('meta-date').textContent.includes('ERROR')) {
+            showSystemToast('GITHUB TELEMETRY FAILED: RATE LIMITED', true);
+        } else {
+            showSystemToast('GITHUB TELEMETRY ROUTED SUCCESSFULLY.', false);
+        }
     }
 
     syncFromGithubRepository();
