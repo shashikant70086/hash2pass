@@ -48,7 +48,7 @@
         * { border-radius: 0px !important; box-sizing: border-box; }
 
         body {
-            background-color: #EAE7E0;
+            background-color: #FAFAFA;
             color: #1A1D24;
             margin: 0;
             padding: 0;
@@ -112,10 +112,11 @@
         .grid-cell.solid-active {
             transition: background-color 0s;
         }
+        .grid-cell.solid-red { background-color: #FF0033 !important; border-color: #FF0033 !important; }
+        .grid-cell.solid-orange { background-color: #FF5500 !important; border-color: #FF5500 !important; }
         .grid-cell.solid-blue { background-color: #0055FF !important; border-color: #0055FF !important; }
-        .grid-cell.solid-orange { background-color: #FF4400 !important; border-color: #FF4400 !important; }
         .grid-cell.solid-green { background-color: #00DD44 !important; border-color: #00DD44 !important; }
-        .grid-cell.solid-pink { background-color: #FF0066 !important; border-color: #FF0066 !important; }
+        .grid-cell.solid-brown { background-color: #8B4513 !important; border-color: #8B4513 !important; }
     </style>
 </head>
 
@@ -405,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Interactive Background Grid Engine ──
     const GRID = document.getElementById('interactive-grid-container');
-    const COLORS = ['solid-blue', 'solid-orange', 'solid-green', 'solid-pink'];
+    const COLORS = ['solid-red', 'solid-orange', 'solid-blue', 'solid-green', 'solid-brown'];
     const TAP_THRESHOLD = 8;
     
     let cellSize = 64;
