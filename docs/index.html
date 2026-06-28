@@ -148,13 +148,14 @@
     </style>
 </head>
 <body class="selection:bg-primary selection:text-white page-enter">
-    <div id="interactive-grid-container">
+    <div id="interactive-grid-container" style="background-color: #e5e7eb;">
         <canvas id="grid-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
         <div id="hover-overlay" style="position: absolute; top: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); will-change: transform; display: none; pointer-events: none;">
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
             <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
         </div>
+        <canvas id="grid-canvas-fg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
     </div>
     <div id="page-content">
     <header class="liquid-nav flex items-center px-6 md:px-12 justify-between">
@@ -259,6 +260,8 @@
             
             const CANVAS = document.getElementById('grid-canvas');
             const ctx = CANVAS.getContext('2d');
+            const CANVAS_FG = document.getElementById('grid-canvas-fg');
+            const ctxFg = CANVAS_FG.getContext('2d');
             const COLORS = ['#377B2B', '#F47A1F', '#00529B', '#01204E', '#028292', '#F5DBAB', '#F9A968', '#F55625'];
             const TAP_THRESHOLD = 8;
             
@@ -290,6 +293,10 @@
                 CANVAS.width = w * window.devicePixelRatio;
                 CANVAS.height = h * window.devicePixelRatio;
                 ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+                CANVAS_FG.width = w * window.devicePixelRatio;
+                CANVAS_FG.height = h * window.devicePixelRatio;
+                ctxFg.scale(window.devicePixelRatio, window.devicePixelRatio);
                 
                 hoverOverlay.style.width = `${cellSize * 3}px`;
                 hoverOverlay.style.height = `${cellSize * 3}px`;
@@ -301,17 +308,18 @@
                 const w = CANVAS.clientWidth;
                 const h = CANVAS.clientHeight;
                 ctx.clearRect(0, 0, w, h);
+                ctxFg.clearRect(0, 0, w, h);
                 
                 const now = performance.now();
                 activeFills = activeFills.filter(f => now - f.startTime < 3000);
                 
                 for (const fill of activeFills) {
-                    ctx.fillStyle = fill.color;
-                    ctx.fillRect(fill.col * cellSize, fill.row * cellSize, cellSize, cellSize);
+                    ctxFg.fillStyle = fill.color;
+                    ctxFg.fillRect(fill.col * cellSize, fill.row * cellSize, cellSize, cellSize);
                 }
                 
                 ctx.beginPath();
-                ctx.strokeStyle = '#E5E7EB';
+                ctx.strokeStyle = '#D1D5DB';
                 ctx.lineWidth = 1;
                 
                 for (let c = 1; c <= cols; c++) {
