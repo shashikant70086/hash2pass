@@ -65,8 +65,9 @@
             position: fixed;
             inset: 0;
             z-index: 0;
-            display: grid;
             pointer-events: none;
+            contain: layout paint style;
+            isolation: isolate;
         }
 
         #page-content {
@@ -144,13 +145,10 @@
             color: #2563EB; /* Skyblue */
         }
 
-        .grid-cell {
-            border-right: 1px solid rgba(255, 255, 255, 0.25);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+        .hover-cell {
             position: relative;
-            overflow: hidden;
-            clip-path: inset(0);
-            border-radius: 0px !important;
+            width: 100%;
+            height: 100%;
             --mx: 50%;
             --my: 50%;
             --strength: 0;
@@ -160,17 +158,15 @@
             will-change: transform;
         }
 
-        .grid-cell::before {
+        .hover-cell::before {
             content: '';
             position: absolute;
             inset: 0;
-            /* Glass aesthetics: Specular, Elliptical Reflection, Linear Glare, Base Contrast Tint */
             background: 
                 radial-gradient(circle 24px at var(--mx) var(--my), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.5) 40%, transparent 100%),
                 radial-gradient(ellipse 140% 90% at var(--mx) var(--my), rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 40%, transparent 70%),
                 linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 40%, rgba(0, 0, 0, 0.02) 80%),
                 rgba(0, 0, 0, 0.025);
-            /* Fresnel rim and micro shadow for physical depth */
             box-shadow: 
                 inset 0 0 1px rgba(255, 255, 255, 1),
                 inset 1px 1px 2px rgba(255, 255, 255, 0.7),
@@ -181,7 +177,7 @@
             will-change: opacity;
         }
 
-        .grid-cell::after {
+        .hover-cell::after {
             content: "";
             position: absolute;
             inset: -30%;
@@ -196,24 +192,21 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .grid-cell::before, .grid-cell::after { transition: none !important; }
+            .hover-cell::before, .hover-cell::after { transition: none !important; }
         }
-
-        /* Solid active states — no opacity, no gradients, no glow */
-        .grid-cell.solid-active {
-            transition: background-color 0s;
-        }
-        .grid-cell.solid-red { background-color: #FF0033 !important; border-color: #FF0033 !important; }
-        .grid-cell.solid-orange { background-color: #FF5500 !important; border-color: #FF5500 !important; }
-        .grid-cell.solid-blue { background-color: #0055FF !important; border-color: #0055FF !important; }
-        .grid-cell.solid-green { background-color: #00DD44 !important; border-color: #00DD44 !important; }
-        .grid-cell.solid-brown { background-color: #8B4513 !important; border-color: #8B4513 !important; }
     </style>
 </head>
 
 <body class="font-secondary text-xs text-charcoal">
 
-<div id="interactive-grid-container"></div>
+    <div id="interactive-grid-container">
+        <canvas id="grid-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%;"></canvas>
+        <div id="hover-overlay" style="position: absolute; top: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); will-change: transform; display: none;">
+            <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
+            <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
+            <div class="hover-cell"></div><div class="hover-cell"></div><div class="hover-cell"></div>
+        </div>
+    </div>
 
 <div id="page-content">
 
@@ -478,13 +471,18 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             nav.classList.remove('scrolled');
         }
-    });
+    }, { passive: true });
+
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    let mouseMoved = false;
 
     // Global mouse tracking for liquid navigation
     document.addEventListener("mousemove", (e) => {
-        document.documentElement.style.setProperty("--mouse-x", e.clientX + "px");
-        document.documentElement.style.setProperty("--mouse-y", e.clientY + "px");
-    });
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        mouseMoved = true;
+    }, { passive: true });
 
     // ── Toast ─────────────────────────────────────────────────────────
     const showSystemToast = (msg, isError = false) => {
@@ -512,23 +510,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ── Interactive Background Grid Engine ──
-    const GRID = document.getElementById('interactive-grid-container');
-    const COLORS = ['solid-red', 'solid-orange', 'solid-blue', 'solid-green', 'solid-brown'];
+    const hoverOverlay = document.getElementById('hover-overlay');
+    const hoverCells = Array.from(document.querySelectorAll('.hover-cell'));
+    
+    const CANVAS = document.getElementById('grid-canvas');
+    const ctx = CANVAS.getContext('2d');
+    
+    const COLORS = ['#FF0033', '#FF5500', '#0055FF', '#00DD44', '#8B4513'];
     const TAP_THRESHOLD = 8;
     
     let cellSize = 64;
     let cols = 0;
     let rows = 0;
-    let gridCells = [];
-    let activeTile = null;
-    let activeTimeout = null;
     let resizeTimer = null;
-    let lastRandomColor = null;
+    let activeFills = [];
     
-    // Touch state
     let touchStartX = 0;
     let touchStartY = 0;
-    let touchMoved = false;
+    let touchHasMoved = false;
 
     function getCellSize() {
         const w = window.innerWidth;
@@ -537,188 +536,180 @@ document.addEventListener('DOMContentLoaded', () => {
         return 64;
     }
 
-    function createGrid() {
-        GRID.innerHTML = '';
-        gridCells = [];
-        activeTile = null;
-
+    function resizeAndDraw() {
         cellSize = getCellSize();
         cols = Math.ceil(window.innerWidth / cellSize) + 1;
         rows = Math.ceil(window.innerHeight / cellSize) + 1;
-
-        GRID.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
-        GRID.style.gridAutoRows = `${cellSize}px`;
-
-        const frag = document.createDocumentFragment();
-        const total = cols * rows;
-        for (let i = 0; i < total; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            cell.dataset.index = i;
-            frag.appendChild(cell);
-            gridCells.push(cell);
-        }
-        GRID.appendChild(frag);
+        
+        CANVAS.width = window.innerWidth * window.devicePixelRatio;
+        CANVAS.height = window.innerHeight * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        
+        hoverOverlay.style.width = `${cellSize * 3}px`;
+        hoverOverlay.style.height = `${cellSize * 3}px`;
+        
+        drawCanvas();
     }
 
-    createGrid();
+    function drawCanvas() {
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        
+        const now = performance.now();
+        activeFills = activeFills.filter(f => now - f.startTime < 3000);
+        
+        for (const fill of activeFills) {
+            ctx.fillStyle = fill.color;
+            ctx.fillRect(fill.col * cellSize, fill.row * cellSize, cellSize, cellSize);
+        }
+        
+        ctx.beginPath();
+        ctx.strokeStyle = '#E5E7EB';
+        ctx.lineWidth = 1;
+        
+        for (let c = 1; c <= cols; c++) {
+            const x = c * cellSize;
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, window.innerHeight);
+        }
+        for (let r = 1; r <= rows; r++) {
+            const y = r * cellSize;
+            ctx.moveTo(0, y);
+            ctx.lineTo(window.innerWidth, y);
+        }
+        ctx.stroke();
+        
+        if (activeFills.length > 0) {
+            requestAnimationFrame(drawCanvas);
+        }
+    }
 
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(createGrid, 150);
-    });
+        resizeTimer = setTimeout(resizeAndDraw, 150);
+    }, { passive: true });
+    
+    resizeAndDraw();
+    
+    let isHovering = false;
+    let isMouseInsideDocument = true;
 
-    // ── Fisheye Lens Hover Effect ──
-    let lastHoveredIndex = -1;
-    let currentlyHoveredCells = [];
+    function updateLoop() {
+        if (mouseMoved && isMouseInsideDocument) {
+            document.documentElement.style.setProperty("--mouse-x", mouseX + "px");
+            document.documentElement.style.setProperty("--mouse-y", mouseY + "px");
+            
+            const col = Math.floor(mouseX / cellSize);
+            const row = Math.floor(mouseY / cellSize);
+            
+            if (col >= 0 && col < cols && row >= 0 && row < rows && isHovering) {
+                hoverOverlay.style.display = 'grid';
+                
+                const overlayX = (col - 1) * cellSize;
+                const overlayY = (row - 1) * cellSize;
+                hoverOverlay.style.transform = `translate3d(${overlayX}px, ${overlayY}px, 0)`;
+                
+                const dx = mouseX - (col * cellSize + cellSize / 2);
+                const dy = mouseY - (row * cellSize + cellSize / 2);
+                const tiltX = (dy / (cellSize/2)) * 5;
+                const tiltY = (dx / (cellSize/2)) * -5;
+                const clampedTiltX = Math.max(-5, Math.min(5, tiltX));
+                const clampedTiltY = Math.max(-5, Math.min(5, tiltY));
 
-    function handleHover(clientX, clientY) {
-        const col = Math.floor(clientX / cellSize);
-        const row = Math.floor(clientY / cellSize);
-
-        if (col < 0 || col >= cols || row < 0 || row >= rows) {
-            clearHover();
-            return;
-        }
-
-        const index = row * cols + col;
-        const rect = gridCells[index].getBoundingClientRect();
-        const mx = clientX - rect.left;
-        const my = clientY - rect.top;
-        const mxPct = (mx / cellSize) * 100 + '%';
-        const myPct = (my / cellSize) * 100 + '%';
-
-        const dx = clientX - (rect.left + cellSize / 2);
-        const dy = clientY - (rect.top + cellSize / 2);
-        const tiltX = (dy / (cellSize/2)) * 5;
-        const tiltY = (dx / (cellSize/2)) * -5;
-        const clampedTiltX = Math.max(-5, Math.min(5, tiltX));
-        const clampedTiltY = Math.max(-5, Math.min(5, tiltY));
-
-        if (index === lastHoveredIndex) {
-            requestAnimationFrame(() => {
-                const cell = gridCells[index];
-                cell.style.setProperty('--mx', mxPct);
-                cell.style.setProperty('--my', myPct);
-                if (cell !== activeTile) {
-                    cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
-                }
-            });
-            return;
-        }
-        lastHoveredIndex = index;
-
-        requestAnimationFrame(() => {
-            currentlyHoveredCells.forEach(cell => {
-                cell.style.setProperty('--strength', '0');
-                if (cell !== activeTile) cell.style.transform = '';
-            });
-            currentlyHoveredCells = [];
-
-            for (let r = row - 1; r <= row + 1; r++) {
-                if (r < 0 || r >= rows) continue;
-                for (let c = col - 1; c <= col + 1; c++) {
-                    if (c < 0 || c >= cols) continue;
+                for (let i = 0; i < 9; i++) {
+                    const cOffset = i % 3;
+                    const rOffset = Math.floor(i / 3);
                     
-                    const cellIndex = r * cols + c;
-                    const cell = gridCells[cellIndex];
+                    const cellGlobalLeft = overlayX + cOffset * cellSize;
+                    const cellGlobalTop = overlayY + rOffset * cellSize;
                     
-                    if (cell === activeTile) continue;
-
+                    const localMx = mouseX - cellGlobalLeft;
+                    const localMy = mouseY - cellGlobalTop;
+                    
+                    const mxPct = (localMx / cellSize) * 100 + '%';
+                    const myPct = (localMy / cellSize) * 100 + '%';
+                    
+                    const cell = hoverCells[i];
+                    cell.style.setProperty('--mx', mxPct);
+                    cell.style.setProperty('--my', myPct);
+                    
                     let strength = 0;
-                    if (r === row && c === col) strength = 1.0;
-                    else if (r === row || c === col) strength = 0.6;
+                    if (cOffset === 1 && rOffset === 1) strength = 1.0;
+                    else if (cOffset === 1 || rOffset === 1) strength = 0.6;
                     else strength = 0.35;
-
-                    if (r === row && c === col) {
-                        cell.style.setProperty('--mx', mxPct);
-                        cell.style.setProperty('--my', myPct);
-                        cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
-                    } else {
-                        cell.style.setProperty('--mx', '50%');
-                        cell.style.setProperty('--my', '50%');
-                        cell.style.transform = '';
-                    }
                     
                     cell.style.setProperty('--strength', strength);
-                    currentlyHoveredCells.push(cell);
+                    
+                    if (cOffset === 1 && rOffset === 1) {
+                        cell.style.transform = `perspective(600px) rotateX(${clampedTiltX}deg) rotateY(${clampedTiltY}deg)`;
+                    } else {
+                        cell.style.transform = '';
+                    }
                 }
+            } else {
+                hoverOverlay.style.display = 'none';
             }
-        });
+            mouseMoved = false;
+        } else if (!isMouseInsideDocument) {
+            hoverOverlay.style.display = 'none';
+        }
+        requestAnimationFrame(updateLoop);
     }
+    requestAnimationFrame(updateLoop);
+    
+    document.addEventListener('mouseenter', () => { isHovering = true; isMouseInsideDocument = true; mouseMoved = true; }, { passive: true });
+    document.addEventListener('mouseleave', () => { isHovering = false; isMouseInsideDocument = false; mouseMoved = true; }, { passive: true });
 
-    function clearHover() {
-        currentlyHoveredCells.forEach(cell => {
-            cell.style.setProperty('--strength', '0');
-            if (cell !== activeTile) cell.style.transform = '';
-        });
-        currentlyHoveredCells = [];
-        lastHoveredIndex = -1;
-    }
-
-    // ── Click / Tap Interaction ──
     function handleClick(clientX, clientY) {
         const col = Math.floor(clientX / cellSize);
         const row = Math.floor(clientY / cellSize);
-
         if (col < 0 || col >= cols || row < 0 || row >= rows) return;
-        const cell = gridCells[row * cols + col];
-
-        if (activeTile) {
-            activeTile.classList.remove(...COLORS, 'solid-active');
-            clearTimeout(activeTimeout);
+        
+        const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+        activeFills.push({ col, row, color, startTime: performance.now() });
+        
+        if (activeFills.length === 1) {
+            drawCanvas();
         }
-
-        cell.style.setProperty('--strength', '0');
-        
-        let color;
-        do {
-            color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        } while (color === lastRandomColor);
-        lastRandomColor = color;
-        
-        cell.classList.add(color, 'solid-active');
-        activeTile = cell;
-
-        activeTimeout = setTimeout(() => {
-            if (activeTile) {
-                activeTile.classList.remove(...COLORS, 'solid-active');
-                activeTile = null;
-            }
-        }, 3000);
     }
 
-    document.addEventListener('mousemove', e => handleHover(e.clientX, e.clientY));
-    document.addEventListener('mouseleave', clearHover);
-
     document.addEventListener('click', e => {
-        if (e.target.closest('a, button, input')) return;
+        if (e.target.closest('a, button, input, header')) return;
         handleClick(e.clientX, e.clientY);
     });
 
     document.addEventListener('touchstart', e => {
-        if (e.target.closest('a, button, input')) return;
+        if (e.target.closest('a, button, input, header')) return;
         const t = e.touches[0];
         touchStartX = t.clientX;
         touchStartY = t.clientY;
-        touchMoved = false;
-        handleHover(t.clientX, t.clientY);
+        touchHasMoved = false;
+        
+        mouseX = t.clientX;
+        mouseY = t.clientY;
+        isHovering = true;
+        isMouseInsideDocument = true;
+        mouseMoved = true;
     }, { passive: true });
 
     document.addEventListener('touchmove', e => {
-        if (e.target.closest('a, button, input')) return;
+        if (e.target.closest('a, button, input, header')) return;
         const t = e.touches[0];
         const dx = Math.abs(t.clientX - touchStartX);
         const dy = Math.abs(t.clientY - touchStartY);
-        if (dx > TAP_THRESHOLD || dy > TAP_THRESHOLD) touchMoved = true;
-        handleHover(t.clientX, t.clientY);
+        if (dx > TAP_THRESHOLD || dy > TAP_THRESHOLD) touchHasMoved = true;
+        
+        mouseX = t.clientX;
+        mouseY = t.clientY;
+        mouseMoved = true;
     }, { passive: true });
 
     document.addEventListener('touchend', e => {
-        if (!touchMoved && !e.target.closest('a, button, input')) {
+        if (!touchHasMoved && !e.target.closest('a, button, input, header')) {
             handleClick(touchStartX, touchStartY);
         }
-        clearHover();
+        isHovering = false;
+        isMouseInsideDocument = false;
+        mouseMoved = true;
     }, { passive: true });
 
     // ── GitHub API Sync ───────────────────────────────────────────────
