@@ -24,44 +24,75 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet">
-    <style>
         body {
             font-family: 'JetBrains Mono', monospace;
-            background-color: #EAE7E0;
+            background-color: #FFFFFF;
             color: #1A1D24;
             overflow-x: hidden;
         }
-        
-        .blueprint-grid-bg {
+
+        #interactive-grid-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: 40px 40px;
-            background-image: 
-                linear-gradient(to right, rgba(44, 58, 71, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(44, 58, 71, 0.05) 1px, transparent 1px);
-            z-index: -1;
+            inset: 0;
+            z-index: 0;
+            display: grid;
+            pointer-events: none;
         }
 
-        .grain-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+        #page-content {
+            position: relative;
+            z-index: 1;
             pointer-events: none;
-            z-index: 50;
-            opacity: 0.05;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            background-blend-mode: multiply;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
+
+        #page-content * {
+            pointer-events: auto;
+        }
+
+        .grid-cell {
+            border-right: 1px solid #E5E7EB;
+            border-bottom: 1px solid #E5E7EB;
+            position: relative;
+            overflow: hidden;
+            clip-path: inset(0);
+            border-radius: 0px !important;
+            --mx: 50%;
+            --my: 50%;
+            --strength: 0;
+        }
+
+        .grid-cell::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--mx) var(--my), rgba(37, 99, 235, 0.15), transparent);
+            box-shadow: inset 0 0 16px rgba(0,0,0, calc(var(--strength) * 0.15)), inset 0 0 2px rgba(0,0,0, calc(var(--strength) * 0.3));
+            transform: scale(calc(1 + var(--strength) * 0.04));
+            opacity: var(--strength);
+            transition: opacity 120ms ease-out, transform 120ms ease-out;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .grid-cell::before { transition: none !important; }
+        }
+
+        .grid-cell.solid-active {
+            transition: background-color 0s;
+        }
+        .grid-cell.solid-blue { background-color: #2563EB !important; border-color: #2563EB !important; }
+        .grid-cell.solid-orange { background-color: #FB923C !important; border-color: #FB923C !important; }
+        .grid-cell.solid-green { background-color: #22C55E !important; border-color: #22C55E !important; }
+        .grid-cell.solid-white { background-color: #F5F5F5 !important; border-color: #D1D5DB !important; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col relative selection:bg-primary selection:text-white page-enter">
-    <div class="grain-overlay"></div>
-    <div class="blueprint-grid-bg"></div>
+<body class="selection:bg-primary selection:text-white page-enter">
+    <div id="interactive-grid-container"></div>
+    <div id="page-content">
 
     <header class="w-full z-40 bg-background-sand/90 backdrop-blur-md border-b border-blueprint-navy/20 h-16 flex items-center px-6 md:px-12 justify-between sticky top-0">
         <div class="flex items-center gap-4">
@@ -128,5 +159,194 @@
             © 2026 Shashikant. Open Source under Apache 2.0.
         </p>
     </footer>
+    </div> <!-- #page-content -->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const GRID = document.getElementById('interactive-grid-container');
+            const COLORS = ['solid-blue', 'solid-orange', 'solid-green', 'solid-white'];
+            const TAP_THRESHOLD = 8;
+            
+            let cellSize = 64;
+            let cols = 0;
+            let rows = 0;
+            let gridCells = [];
+            let activeTile = null;
+            let activeTimeout = null;
+            let resizeTimer = null;
+            
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchMoved = false;
+
+            function getCellSize() {
+                const w = window.innerWidth;
+                if (w < 480) return 32;
+                if (w < 768) return 48;
+                return 64;
+            }
+
+            function createGrid() {
+                GRID.innerHTML = '';
+                gridCells = [];
+                activeTile = null;
+
+                cellSize = getCellSize();
+                cols = Math.ceil(window.innerWidth / cellSize) + 1;
+                rows = Math.ceil(window.innerHeight / cellSize) + 1;
+
+                GRID.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+                GRID.style.gridAutoRows = `${cellSize}px`;
+
+                const frag = document.createDocumentFragment();
+                const total = cols * rows;
+                for (let i = 0; i < total; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.index = i;
+                    frag.appendChild(cell);
+                    gridCells.push(cell);
+                }
+                GRID.appendChild(frag);
+            }
+
+            createGrid();
+
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(createGrid, 150);
+            });
+
+            let lastHoveredIndex = -1;
+            let currentlyHoveredCells = [];
+
+            function handleHover(clientX, clientY) {
+                const col = Math.floor(clientX / cellSize);
+                const row = Math.floor(clientY / cellSize);
+
+                if (col < 0 || col >= cols || row < 0 || row >= rows) {
+                    clearHover();
+                    return;
+                }
+
+                const index = row * cols + col;
+                const rect = gridCells[index].getBoundingClientRect();
+                const mx = clientX - rect.left;
+                const my = clientY - rect.top;
+                const mxPct = (mx / cellSize) * 100 + '%';
+                const myPct = (my / cellSize) * 100 + '%';
+
+                if (index === lastHoveredIndex) {
+                    requestAnimationFrame(() => {
+                        gridCells[index].style.setProperty('--mx', mxPct);
+                        gridCells[index].style.setProperty('--my', myPct);
+                    });
+                    return;
+                }
+                lastHoveredIndex = index;
+
+                requestAnimationFrame(() => {
+                    currentlyHoveredCells.forEach(cell => {
+                        cell.style.setProperty('--strength', '0');
+                    });
+                    currentlyHoveredCells = [];
+
+                    for (let r = row - 1; r <= row + 1; r++) {
+                        if (r < 0 || r >= rows) continue;
+                        for (let c = col - 1; c <= col + 1; c++) {
+                            if (c < 0 || c >= cols) continue;
+                            
+                            const cellIndex = r * cols + c;
+                            const cell = gridCells[cellIndex];
+                            
+                            if (cell === activeTile) continue;
+
+                            let strength = 0;
+                            if (r === row && c === col) strength = 1.0;
+                            else if (r === row || c === col) strength = 0.6;
+                            else strength = 0.35;
+
+                            if (r === row && c === col) {
+                                cell.style.setProperty('--mx', mxPct);
+                                cell.style.setProperty('--my', myPct);
+                            } else {
+                                cell.style.setProperty('--mx', '50%');
+                                cell.style.setProperty('--my', '50%');
+                            }
+                            
+                            cell.style.setProperty('--strength', strength);
+                            currentlyHoveredCells.push(cell);
+                        }
+                    }
+                });
+            }
+
+            function clearHover() {
+                currentlyHoveredCells.forEach(cell => {
+                    cell.style.setProperty('--strength', '0');
+                });
+                currentlyHoveredCells = [];
+                lastHoveredIndex = -1;
+            }
+
+            function handleClick(clientX, clientY) {
+                const col = Math.floor(clientX / cellSize);
+                const row = Math.floor(clientY / cellSize);
+
+                if (col < 0 || col >= cols || row < 0 || row >= rows) return;
+                const cell = gridCells[row * cols + col];
+
+                if (activeTile) {
+                    activeTile.classList.remove(...COLORS, 'solid-active');
+                    clearTimeout(activeTimeout);
+                }
+
+                cell.style.setProperty('--strength', '0');
+                const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+                cell.classList.add(color, 'solid-active');
+                activeTile = cell;
+
+                activeTimeout = setTimeout(() => {
+                    if (activeTile) {
+                        activeTile.classList.remove(...COLORS, 'solid-active');
+                        activeTile = null;
+                    }
+                }, 3000);
+            }
+
+            document.addEventListener('mousemove', e => handleHover(e.clientX, e.clientY));
+            document.addEventListener('mouseleave', clearHover);
+
+            document.addEventListener('click', e => {
+                if (e.target.closest('a, button, input')) return;
+                handleClick(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('touchstart', e => {
+                if (e.target.closest('a, button, input')) return;
+                const t = e.touches[0];
+                touchStartX = t.clientX;
+                touchStartY = t.clientY;
+                touchMoved = false;
+                handleHover(t.clientX, t.clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', e => {
+                if (e.target.closest('a, button, input')) return;
+                const t = e.touches[0];
+                const dx = Math.abs(t.clientX - touchStartX);
+                const dy = Math.abs(t.clientY - touchStartY);
+                if (dx > TAP_THRESHOLD || dy > TAP_THRESHOLD) touchMoved = true;
+                handleHover(t.clientX, t.clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchend', e => {
+                if (!touchMoved && !e.target.closest('a, button, input')) {
+                    handleClick(touchStartX, touchStartY);
+                }
+                clearHover();
+            }, { passive: true });
+        });
+    </script>
 </body>
 </html>
